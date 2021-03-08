@@ -64,7 +64,6 @@ class OrionLauncher {
     if (OrionConf.init(config) == false)
       throw new Exception("[OrionSSE] Loading configuration failed and HTTP server is not started.")
     
-    throw new Exception("stop")
     /* STEP #2: Launch HHTP server */
     
     /*
@@ -85,6 +84,19 @@ class OrionLauncher {
      */
     import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
     
+    /*
+     * The queue contains a buffer. If the notifications from the
+     * Orion Broker are pushed to queue (OrionActor) faster than
+     * the source is consumed (SSE), there is a risk of an overflow.
+     * 
+     * The overflow strategy specified for the queue is backpressure,
+     * and is used to avoid dropping events if the buffer is full.
+     * 
+     * Instead, the returned Future does not complete until there is 
+     * space in the buffer and offer should not be called again until 
+     * it completes.
+     * 
+     */
     lazy val (queue, source) = Source.queue[String](Int.MaxValue, OverflowStrategy.backpressure)
       .delay(1.seconds, DelayOverflowStrategy.backpressure)
 

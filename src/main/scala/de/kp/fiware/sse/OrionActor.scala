@@ -20,10 +20,14 @@ package de.kp.fiware.sse
 
 import akka.actor.Actor
 import akka.http.scaladsl.model.HttpRequest
+
+import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.util.ByteString
 
 import com.google.gson._
+
+import scala.collection.mutable.Queue
 import scala.util.{Failure, Success, Try}
 
 import de.kp.fiware.sse.OrionActor._
@@ -47,6 +51,13 @@ class OrionActor(subscription:String, queue:SourceQueueWithComplete[String]) ext
    * and this materializer is required to retrieve the bytestring
    */
   implicit val system = context.system
+  implicit val ec = system.dispatcher
+
+  /*
+   * An additional queue to manage events that were dropped due
+   * to a source queue overflow
+   */
+  val buffer = Queue[String]()
   
   override def receive: Receive = {  
 
@@ -119,10 +130,34 @@ class OrionActor(subscription:String, queue:SourceQueueWithComplete[String]) ext
       event.addProperty("servicePath", servicePath)
       
       event.add("entities", data)
-      queue.offer(event.toString)
+      val eventS = event.toString
 
-    } 
+      val message = 
+        if (buffer.size == 0) eventS        
+        else {
+          buffer.enqueue(eventS)
+          buffer.dequeue        
+        }
+        
+      queue.offer(message).map {
+        case QueueOfferResult.Enqueued => {
+          /*
+           * In this case the event was successfully
+           * sent to the queue, i.e. there is 
+           */
+        }
+        case QueueOfferResult.Dropped => {
+          /*
+           * In this case the event was dropped as
+           * the queue is full
+           */
+          buffer.enqueue(message)
+        }
+        case QueueOfferResult.Failure(ex) => {}
+        case QueueOfferResult.QueueClosed => {}        
+      }
 
+    }
   }
 
 }
