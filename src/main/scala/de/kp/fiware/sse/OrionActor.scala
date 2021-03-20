@@ -18,7 +18,6 @@ package de.kp.fiware.sse
  * 
  */
 
-import akka.actor.Actor
 import akka.http.scaladsl.model.HttpRequest
 
 import akka.stream.QueueOfferResult
@@ -30,29 +29,16 @@ import com.google.gson._
 import scala.collection.mutable.Queue
 import scala.util.{Failure, Success, Try}
 
+import de.kp.fiware.actor.BaseActor
 import de.kp.fiware.sse.OrionActor._
 
 /*
  * This actor receives NGSI events from the Orion Context Broker
  * and sends them to the queue
  */
-class OrionActor(subscription:String, queue:SourceQueueWithComplete[String]) extends Actor {
+class OrionActor(queue:SourceQueueWithComplete[String]) extends BaseActor {
  
-  private val parser = new JsonParser()
-
-  /*
-   * The header positions that hold service and
-   * service path information
-   */
-  private val SERVICE_HEADER = 4
-  private val SERVICE_PATH_HEADER = 5
-  /*
-   * The actor system is implicitly accompanied by a materializer,
-   * and this materializer is required to retrieve the bytestring
-   */
-  implicit val system = context.system
-  implicit val ec = system.dispatcher
-
+  private val subscription = conf.getSubscription
   /*
    * An additional queue to manage events that were dropped due
    * to a source queue overflow
@@ -79,21 +65,12 @@ class OrionActor(subscription:String, queue:SourceQueueWithComplete[String]) ext
    */
   private def toNGSIEvent(request: HttpRequest):Unit = {
 
-    /* HEADERS */
+    val orionRequest = toOrionRequest(request)
     
-    val headers = request.headers
+    val service = orionRequest.service
+    val servicePath = orionRequest.servicePath
     
-    val service = headers(SERVICE_HEADER).value()
-    val servicePath = headers(SERVICE_PATH_HEADER).value()
-    
-    /* BODY */
-    
-    /* Extract body as String from request entity */
-    val bytes = request.entity.dataBytes.runFold(ByteString(""))(_ ++ _)
-    val body = bytes.value.get.get.decodeString("UTF-8")
-    
-    /* We expect that the Orion Context Broker sends a JSON object */
-    val json = JsonParser.parseString(body).getAsJsonObject
+    val json = orionRequest.payload
     /*
      * {
         "data": [

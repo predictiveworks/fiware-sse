@@ -21,7 +21,22 @@ package de.kp.fiware.sse
 import java.security._
 import javax.net.ssl._
 
+import java.security.cert.X509Certificate
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+
+class AllTrustManager extends X509TrustManager {
+  
+  def getAcceptedIssuers:Array[X509Certificate] = {
+    Array.empty[X509Certificate]
+  }
+
+  def checkClientTrusted(chain:Array[X509Certificate], authType:String):Unit = {
+	}
+
+	def checkServerTrusted(chain:Array[X509Certificate], authType:String):Unit = {
+	}
+  
+}
 
 class SslOptions(
 
@@ -104,6 +119,16 @@ class SslOptions(
 	  val secureRandom = Option(new SecureRandom())
 	  buildSSLContext(keyManagers, trustManagers, secureRandom)
 	  
+	}
+
+	def getTrustAllContext = {
+	  
+	  val keyManagers:Array[KeyManager] = null
+	  val trustManagers:Array[TrustManager] = Array(new AllTrustManager())
+	  
+	  val secureRandom = Option(new SecureRandom())
+	  buildSSLContext(keyManagers, trustManagers, secureRandom)
+
 	}
 	
 	private def buildSSLContext(keyManagers:Seq[KeyManager], trustManagers:Seq[TrustManager], secureRandom:Option[SecureRandom]) = {

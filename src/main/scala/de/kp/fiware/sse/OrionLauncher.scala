@@ -110,7 +110,7 @@ class OrionLauncher {
      * The OrionActor is used to receive NGSI events and send
      * them to the message queue
      */
-    lazy val orionActor = system.actorOf(Props(new OrionActor(OrionConf.getSubscription, queue)), "OrionActor")
+    lazy val orionActor = system.actorOf(Props(new OrionActor(queue)), "OrionActor")
     
     def routes:Route = {
       path("events") {
@@ -192,7 +192,7 @@ class OrionLauncher {
        * be specified as 'https://'. In this case, an SSL
        * security context must be specified
        */
-      val context = SslHelper.buildServerConnectionContext
+      val context = SslHelper.buildServerContext
       Http().newServerAt(binding.host, binding.port).enableHttps(context).bind(routes)
 
     }

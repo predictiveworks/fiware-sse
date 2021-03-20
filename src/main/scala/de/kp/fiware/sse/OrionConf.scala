@@ -99,15 +99,34 @@ object OrionConf {
     
   }
    
+  def getActorCfg:Config = cfg.getConfig("actor")
+
   def getBrokerUrl = brokerUrl
+  /*
+   * Retrieve the configuration for the CartoDB
+   * client connection
+   */
+  def getCartoCfg:Config = cfg.getConfig("cartodb") 
+
+  /*
+   * Retrieve the SSL/TLS configuration to send
+   * requests to the Carto DB REST SQL endpoint
+   */
+  def getCartoSecurity:Config = {
+
+    val security = cfg.getConfig("security")
+    security.getConfig("cartodb")
+  
+  }
+  
   /*
    * Retrieve the SSL/TLS configuration for subscription
    * requests to the Orion Context Broker
    */
-  def getClientSecurity:Config = {
+  def getFiwareSecurity:Config = {
 
     val security = cfg.getConfig("security")
-    security.getConfig("client")
+    security.getConfig("fiware")
   
   }
   /*

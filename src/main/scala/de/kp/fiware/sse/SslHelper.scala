@@ -24,16 +24,28 @@ import javax.net.ssl.SSLContext
 
 object SslHelper {
   
-  def buildClientConnectionContext = {
-    val securityCfg = OrionConf.getClientSecurity    
-    ConnectionContext.httpsClient(context = buildSSLContext(securityCfg))
+  def buildCartoContext = {
+    val cfg = OrionConf.getCartoSecurity    
+    ConnectionContext.httpsClient(context = buildTrustAllContext(cfg))
   }
   
-  def buildServerConnectionContext = {
-    val securityCfg = OrionConf.getServerSecurity    
-    ConnectionContext.httpsServer(sslContext = buildSSLContext(securityCfg))
+  def buildFiwareContext = {
+    val cfg = OrionConf.getFiwareSecurity    
+    ConnectionContext.httpsClient(context = buildSSLContext(cfg))
+  }
+  
+  def buildServerContext = {
+    val cfg = OrionConf.getServerSecurity    
+    ConnectionContext.httpsServer(sslContext = buildSSLContext(cfg))
   }
 
+  private def buildTrustAllContext(securityCfg:Config):SSLContext = {
+    
+    val sslOptions = getSslOptions(securityCfg)
+    sslOptions.getTrustAllContext
+    
+  }
+  
   private def buildSSLContext(securityCfg:Config):SSLContext = {
     
     val sslOptions = getSslOptions(securityCfg)

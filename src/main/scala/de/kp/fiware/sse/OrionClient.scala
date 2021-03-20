@@ -78,7 +78,7 @@ object OrionClient {
         /*
          * Distinguish between SSL/TLS and non-SSL/TLS requests
          */
-        val clientSec = OrionConf.getClientSecurity
+        val clientSec = OrionConf.getFiwareSecurity
         if (clientSec.getString("ssl") == "false")
           /*
            * The request protocol in the broker url must be
@@ -92,7 +92,7 @@ object OrionClient {
            * specified as 'https://'. In this case, an SSL
            * security context must be specified
            */
-          val context = SslHelper.buildClientConnectionContext
+          val context = SslHelper.buildFiwareContext
           Http(system).singleRequest(request = request, connectionContext = context)
 
         }
